@@ -30,7 +30,7 @@ def verificar_cuit_bcra(cuit):
     })
     
     try:
-        # Calentamiento de sesión
+        # Calentamiento de sesión para evadir el WAF
         sesion_bcra.get(urls["home"], timeout=15)
         time.sleep(1.5)
         
@@ -55,77 +55,4 @@ def verificar_cuit_bcra(cuit):
                         sit = int(ent.get("situacion", 1))
                         peor_situacion = max(peor_situacion, sit)
                         deudas_lista.append({
-                            "Entidad": ent.get("entidad"),
-                            "Monto (Miles $)": ent.get("monto"),
-                            "Situación": sit
-                        })
-                    df_deudas = pd.DataFrame(deudas_lista)
-        else:
-            mensaje_error = f"Bloqueo HTTP en deudas: {res_deudas.status_code}"
-
-        time.sleep(1.5)
-
-        # Consulta Cheques
-        res_cheques = sesion_bcra.get(urls["cheques"], timeout=20)
-        if res_cheques.status_code == 200:
-            respuesta = res_cheques.json()
-            if respuesta.get("status") == 200 and "results" in respuesta:
-                cheques_lista = []
-                for causal in respuesta["results"].get("causales", []):
-                    motivo_causal = causal.get("causal")
-                    for entidad in causal.get("entidades", []):
-                        for cheque in entidad.get("detalle", []):
-                            cheques_lista.append({
-                                "Nro Cheque": cheque.get("nroCheque"),
-                                "Causal": motivo_causal,
-                                "Fecha Rechazo": cheque.get("fechaRechazo"),
-                                "Monto ($)": cheque.get("monto"),
-                                "Estado": "Levantado" if cheque.get("fechaPago") else "Impago"
-                            })
-                df_cheques = pd.DataFrame(cheques_lista)
-
-        return denominacion, peor_situacion, df_deudas, df_cheques, mensaje_error
-        
-    except Exception as e:
-        return denominacion, None, pd.DataFrame(), pd.DataFrame(), f"Falla de red: {str(e)}"
-
-# ==========================================
-# INTERFAZ DE USUARIO
-# ==========================================
-cuit_input = st.text_input("CUIT del cliente (sin guiones):", placeholder="Ej: 33708633009")
-
-if st.button("Consultar BCRA", type="primary"):
-    if not cuit_input:
-        st.warning("⚠️ Por favor, ingresá un número de CUIT.")
-    else:
-        with st.spinner("Conectando de forma segura con el BCRA (tomará unos segundos)..."):
-            denominacion, peor_sit, tabla_deudas, tabla_cheques, error = verificar_cuit_bcra(cuit_input)
-            
-            if error:
-                st.error(f"⚠️ Error detectado: {error}")
-            else:
-                st.success(f"Resultados para: **{denominacion}** (CUIT: {cuit_input})")
-                
-                # Sección Deudas
-                st.subheader("Situación Crediticia")
-                if peor_sit is not None:
-                    color = "red" if peor_sit >= 3 else "orange" if peor_sit == 2 else "green"
-                    st.markdown(f"**Peor Situación Registrada:** <span style='color:{color}; font-size:20px'><b>{peor_sit}</b></span>", unsafe_allow_html=True)
-                    if not tabla_deudas.empty:
-                        st.dataframe(tabla_deudas, use_container_width=True)
-                else:
-                    st.info("No se encontraron registros de deudas bancarias para este CUIT.")
-                
-                st.divider()
-                
-                # Sección Cheques
-                st.subheader(f"Historial de Cheques Rechazados ({len(tabla_cheques)} registros)")
-                if not tabla_cheques.empty:
-                    # Función para pintar de rojo los impagos en Streamlit
-                    def color_estado(val):
-                        color = 'red' if val == 'Impago' else 'green'
-                        return f'color: {color}; font-weight: bold'
-                    
-                    st.dataframe(tabla_cheques.style.applymap(color_estado, subset=['Estado']), use_container_width=True)
-                else:
-                    st.info("El CUIT no registra antecedentes de cheques rechazados.")
+                            "Entidad": ent.get
