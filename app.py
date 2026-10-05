@@ -56,3 +56,13 @@ def verificar_cuit_bcra(cuit):
                         peor_situacion = max(peor_situacion, sit)
                         deudas_lista.append({
                             "Entidad": ent.get
+
+for ent in entidades:
+                        sit = int(ent.get("situacion", 1))
+                        peor_situacion = max(peor_situacion, sit)
+                        deudas_lista.append({
+                            "Entidad": ent.get("entidad"),
+                            "Monto (Miles $)": ent.get("monto"),
+                            "Situación": sit
+                        }) # <--- Esto es lo que seguramente falta en tu archivo
+                    df_deudas = pd.DataFrame(deudas_lista)
